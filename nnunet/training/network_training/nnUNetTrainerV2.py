@@ -45,11 +45,12 @@ class nnUNetTrainerV2(nnUNetTrainer):
                  unpack_data=True, deterministic=True, fp16=False):
         super().__init__(plans_file, fold, output_folder, dataset_directory, batch_dice, stage, unpack_data,
                          deterministic, fp16)
-        self.max_num_epochs = 1000
-        self.initial_lr = 1e-2
+        self.max_num_epochs = 2000
+        self.initial_lr = 1e-4
         self.deep_supervision_scales = None
         self.ds_loss_weights = None
 
+        self.smooth_trans = True
         self.pin_memory = True
 
     def initialize(self, training=True, force_load_plans=False):
@@ -80,10 +81,10 @@ class nnUNetTrainerV2(nnUNetTrainer):
             # this gives higher resolution outputs more weight in the loss
             weights = np.array([1 / (2 ** i) for i in range(net_numpool)])
 
-            # we don't use the lowest 2 outputs. Normalize weights so that they sum to 1
             mask = np.array([True] + [True if i < net_numpool - 1 else False for i in range(1, net_numpool)])
             weights[~mask] = 0
             weights = weights / weights.sum()
+            print("weights_tranerV2 = ",weights)
             self.ds_loss_weights = weights
             # now wrap the loss
             self.loss = MultipleOutputLoss2(self.loss, self.ds_loss_weights)
@@ -102,6 +103,7 @@ class nnUNetTrainerV2(nnUNetTrainer):
                         "INFO: Not unpacking data! Training may be slow due to that. Pray you are not using 2d or you "
                         "will wait all winter for your model to finish!")
 
+                print('self.deep_supervision_scales:', self.deep_supervision_scales)
                 self.tr_gen, self.val_gen = get_moreDA_augmentation(
                     self.dl_tr, self.dl_val,
                     self.data_aug_params[
@@ -232,21 +234,24 @@ class nnUNetTrainerV2(nnUNetTrainer):
         data_dict = next(data_generator)
         data = data_dict['data']
         target = data_dict['target']
+        disMap = data_dict['disMap']
 
         data = maybe_to_torch(data)
         target = maybe_to_torch(target)
+        disMap = maybe_to_torch(disMap)
 
         if torch.cuda.is_available():
             data = to_cuda(data)
             target = to_cuda(target)
-
+            disMap = to_cuda(disMap)
         self.optimizer.zero_grad()
 
         if self.fp16:
             with autocast():
                 output = self.network(data)
                 del data
-                l = self.loss(output, target)
+
+                l = self.loss(output, target, disMap, self.epoch)
 
             if do_backprop:
                 self.amp_grad_scaler.scale(l).backward()
@@ -257,7 +262,7 @@ class nnUNetTrainerV2(nnUNetTrainer):
         else:
             output = self.network(data)
             del data
-            l = self.loss(output, target)
+            l = self.loss(output, target, disMap, self.epoch)
 
             if do_backprop:
                 l.backward()
@@ -268,7 +273,7 @@ class nnUNetTrainerV2(nnUNetTrainer):
             self.run_online_evaluation(output, target)
 
         del target
-
+        del disMap
         return l.detach().cpu().numpy()
 
     def do_split(self):
@@ -381,8 +386,8 @@ class nnUNetTrainerV2(nnUNetTrainer):
                                                              self.data_aug_params['rotation_z'],
                                                              self.data_aug_params['scale_range'])
 
-        self.data_aug_params["scale_range"] = (0.7, 1.4)
-        self.data_aug_params["do_elastic"] = False
+        self.data_aug_params["scale_range"] = (0.8, 1.2)
+        self.data_aug_params["do_elastic"] = True
         self.data_aug_params['selected_seg_channels'] = [0]
         self.data_aug_params['patch_size_for_spatialtransform'] = self.patch_size
 

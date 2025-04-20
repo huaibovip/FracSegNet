@@ -18,7 +18,7 @@ from batchgenerators.utilities.file_and_folder_operations import *
 import importlib
 import pkgutil
 from nnunet.training.network_training.nnUNetTrainer import nnUNetTrainer
-
+from nnunet.training.network_training.nnUNetTrainerV2 import nnUNetTrainerV2
 
 def recursive_find_python_class(folder, trainer_name, current_module):
     tr = None
@@ -147,9 +147,88 @@ def load_model_and_checkpoint_files(folder, folds=None, mixed_precision=None, ch
     all_params = [torch.load(i, map_location=torch.device('cpu')) for i in all_best_model_files]
     return trainer, all_params
 
+def restore_model_simple(pkl_file, checkpoint=None, train=False):
+    """
+    This is a utility function to load any nnUNet trainer from a pkl. It will recursively search
+    nnunet.trainig.network_training for the file that contains the trainer and instantiate it with the arguments saved in the pkl file. If checkpoint
+    is specified, it will furthermore load the checkpoint file in train/test mode (as specified by train).
+    The pkl file required here is the one that will be saved automatically when calling nnUNetTrainer.save_checkpoint.
+    :param pkl_file:
+    :param checkpoint:
+    :param train:
+    :return:
+    """
+    info = load_pickle(pkl_file)
+    init = info['init']
+    name = info['name']
+
+    # search_in = join(nnunet.__path__[0], "training", "network_training")
+    # tr = recursive_find_trainer([search_in], name, current_module="nnunet.training.network_training")
+    if name == "nnUNetTrainer":
+        tr = nnUNetTrainer
+    elif name == "nnUNetTrainerV2":
+        tr = nnUNetTrainerV2
+    else:
+        tr = nnUNetTrainer
+
+    current_module = "nnunet.training.network_training"
+    m = importlib.import_module(current_module + "." + name)
+    tr = getattr(m, name)
+
+    if tr is None:
+        raise RuntimeError(
+            "Could not find the model trainer specified in checkpoint in nnunet.trainig.network_training. If it "
+            "is not located there, please move it or change the code of restore_model. Your model "
+            "trainer can be located in any directory within nnunet.trainig.network_training (search is recursive)."
+            "\nDebug info: \ncheckpoint file: %s\nName of trainer: %s " % (checkpoint, name))
+    assert issubclass(tr, nnUNetTrainer), "The network trainer was found but is not a subclass of nnUNetTrainer. " \
+                                          "Please make it so!"
+
+    if init[0].endswith('2D.pkl'):
+        initnew = list(init) + ['2d']
+        del init
+        init = tuple(initnew)
+
+    # print(len(init))
+    # print(*init)
+    # print(type(init))
+    if len(init) == 7:
+        print("warning: this model seems to have been saved with a previous version of nnUNet. Attempting to load it "
+              "anyways. Expect the unexpected.")
+        print("manually editing init args...")
+        init = [init[i] for i in range(len(init)) if i != 2]
+
+    # init[0] is the plans file. This argument needs to be replaced because the original plans file may not exist
+    # anymore.
+    trainer = tr(*init)
+    trainer.process_plans(info['plans'])
+    if checkpoint is not None:
+        trainer.load_checkpoint(checkpoint, train)
+    return trainer
+
+
+def load_trained_model(folder):
+    """
+    No fold needed.
+    Automatically detect model file in this direct folder.
+    """
+    pkl_file = "model_best.model.pkl"
+    for file in os.listdir(folder):
+        if ".model.pkl" in file:
+            pkl_file = file
+            break
+    model_file = pkl_file[:-4]
+    assert model_file in os.listdir(folder), "Err: Model file not found."
+
+    trainer = restore_model_simple(join(folder, pkl_file))
+    trainer.output_folder = folder
+    trainer.output_folder_base = folder
+    trainer.initialize(False)
+    params = torch.load((join(folder, model_file)), map_location=torch.device('cuda', torch.cuda.current_device()))
+    return trainer, params
 
 if __name__ == "__main__":
-    pkl = "/home/fabian/PhD/results/nnUNetV2/nnUNetV2_3D_fullres/Task004_Hippocampus/fold0/model_best.model.pkl"
+    pkl = r"E:\TMI-data-v20230926\code2Github\code\FractureSeg\trained_model\FractureSegModel\model_best.model.pkl"
     checkpoint = pkl[:-4]
     train = False
     trainer = restore_model(pkl, checkpoint, train)

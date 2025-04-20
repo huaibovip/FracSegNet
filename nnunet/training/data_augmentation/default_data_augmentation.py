@@ -46,15 +46,15 @@ default_3D_augmentation_params = {
     "p_eldef": 0.2,
 
     "do_scaling": True,
-    "scale_range": (0.85, 1.25),
+    "scale_range": (0.80, 1.20),
     "independent_scale_factor_for_each_axis": False,
     "p_independent_scale_per_axis": 1,
     "p_scale": 0.2,
 
     "do_rotation": True,
-    "rotation_x": (-15. / 360 * 2. * np.pi, 15. / 360 * 2. * np.pi),
-    "rotation_y": (-15. / 360 * 2. * np.pi, 15. / 360 * 2. * np.pi),
-    "rotation_z": (-15. / 360 * 2. * np.pi, 15. / 360 * 2. * np.pi),
+    "rotation_x": (-30. / 360 * 2. * np.pi, 30. / 360 * 2. * np.pi),
+    "rotation_y": (-30. / 360 * 2. * np.pi, 30. / 360 * 2. * np.pi),
+    "rotation_z": (-30. / 360 * 2. * np.pi, 30. / 360 * 2. * np.pi),
     "rotation_p_per_axis": 1,
     "p_rot": 0.2,
 
@@ -161,6 +161,7 @@ def get_default_augmentation(dataloader_train, dataloader_val, patch_size, param
         p_scale_per_sample=params.get("p_scale"), p_rot_per_sample=params.get("p_rot"),
         independent_scale_for_each_axis=params.get("independent_scale_factor_for_each_axis")
     ))
+
     if params.get("dummy_2D") is not None and params.get("dummy_2D"):
         tr_transforms.append(Convert2DTo3DTransform())
 
@@ -177,7 +178,7 @@ def get_default_augmentation(dataloader_train, dataloader_val, patch_size, param
         tr_transforms.append(MaskTransform(mask_was_used_for_normalization, mask_idx_in_seg=0, set_outside_to=0))
 
     tr_transforms.append(RemoveLabelTransform(-1, 0))
-
+    # default: move_last_seg_chanel_to_data = 'false'
     if params.get("move_last_seg_chanel_to_data") is not None and params.get("move_last_seg_chanel_to_data"):
         tr_transforms.append(MoveSegAsOneHotToData(1, params.get("all_segmentation_labels"), 'seg', 'data'))
         if params.get("cascade_do_cascade_augmentations") and not None and params.get(
@@ -199,7 +200,7 @@ def get_default_augmentation(dataloader_train, dataloader_val, patch_size, param
     if regions is not None:
         tr_transforms.append(ConvertSegmentationToRegionsTransform(regions, 'target', 'target'))
 
-    tr_transforms.append(NumpyToTensor(['data', 'target'], 'float'))
+    tr_transforms.append(NumpyToTensor(['data', 'target','disMap'], 'float'))
 
     tr_transforms = Compose(tr_transforms)
     # from batchgenerators.dataloading import SingleThreadedAugmenter
@@ -225,7 +226,7 @@ def get_default_augmentation(dataloader_train, dataloader_val, patch_size, param
     if regions is not None:
         val_transforms.append(ConvertSegmentationToRegionsTransform(regions, 'target', 'target'))
 
-    val_transforms.append(NumpyToTensor(['data', 'target'], 'float'))
+    val_transforms.append(NumpyToTensor(['data', 'target','disMap'], 'float'))
     val_transforms = Compose(val_transforms)
 
     # batchgenerator_val = SingleThreadedAugmenter(dataloader_val, val_transforms)

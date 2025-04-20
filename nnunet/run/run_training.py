@@ -175,7 +175,7 @@ def main():
             else:
                 # new training without pretraine weights, do nothing
                 pass
-
+            print('flag-run_training')
             trainer.run_training()
         else:
             if valbest:

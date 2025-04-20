@@ -103,8 +103,9 @@ def main():
 
         if args.verify_dataset_integrity:
             verify_dataset_integrity(join(nnUNet_raw_data, task_name))
-
+        print('flag1')
         crop(task_name, False, tf)
+        print('flag2')
 
         tasks.append(task_name)
 
@@ -157,12 +158,13 @@ def main():
             else:
                 exp_planner = planner_3d(cropped_out_dir, preprocessing_output_dir_this_task)
             exp_planner.plan_experiment()
-            if not dont_run_preprocessing:  # double negative, yooo
+            if not dont_run_preprocessing:
                 exp_planner.run_preprocessing(threads)
+                print('=======')
         if planner_2d is not None:
             exp_planner = planner_2d(cropped_out_dir, preprocessing_output_dir_this_task)
             exp_planner.plan_experiment()
-            if not dont_run_preprocessing:  # double negative, yooo
+            if not dont_run_preprocessing:
                 exp_planner.run_preprocessing(threads)
 
 

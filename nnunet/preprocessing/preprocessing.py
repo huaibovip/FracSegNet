@@ -24,6 +24,8 @@ import numpy as np
 from batchgenerators.utilities.file_and_folder_operations import *
 from multiprocessing.pool import Pool
 
+from nnunet.preprocessing.calculate_disMap import calculate_disMap
+
 
 def get_do_separate_z(spacing, anisotropy_threshold=RESAMPLING_SEPARATE_Z_ANISO_THRESHOLD):
     do_separate_z = (np.max(spacing) / np.min(spacing)) > anisotropy_threshold
@@ -199,7 +201,8 @@ def resample_data_or_seg(data, new_shape, is_seg, axis=None, order=3, do_separat
 
 
 class GenericPreprocessor(object):
-    def __init__(self, normalization_scheme_per_modality, use_nonzero_mask, transpose_forward: (tuple, list), intensityproperties=None):
+    def __init__(self, normalization_scheme_per_modality, use_nonzero_mask, transpose_forward: (tuple, list),
+                 intensityproperties=None):
         """
 
         :param normalization_scheme_per_modality: dict {0:'nonCT'}
@@ -327,17 +330,20 @@ class GenericPreprocessor(object):
         data, seg, properties = self.resample_and_normalize(data, target_spacing,
                                                             properties, seg, force_separate_z)
 
-        all_data = np.vstack((data, seg)).astype(np.float32)
+        # calculate distance map
+        distanceMap = calculate_disMap(seg)
+        # vstack data
+        all_data = np.vstack((data, seg, distanceMap)).astype(np.float32)
 
         # we need to find out where the classes are and sample some random locations
         # let's do 10.000 samples per class
         # seed this for reproducibility!
         num_samples = 10000
-        min_percent_coverage = 0.01 # at least 1% of the class voxels need to be selected, otherwise it may be too sparse
+        min_percent_coverage = 0.01  # at least 1% of the class voxels need to be selected, otherwise it may be too sparse
         rndst = np.random.RandomState(1234)
         class_locs = {}
         for c in all_classes:
-            all_locs = np.argwhere(all_data[-1] == c)
+            all_locs = np.argwhere(all_data[-2] == c)
             if len(all_locs) == 0:
                 class_locs[c] = []
                 continue
@@ -348,6 +354,7 @@ class GenericPreprocessor(object):
             class_locs[c] = selected
             print(c, target_num_samples)
         properties['class_locations'] = class_locs
+        # print('all_data.shape', all_data.shape)
 
         print("saving: ", os.path.join(output_folder_stage, "%s.npz" % case_identifier))
         np.savez_compressed(os.path.join(output_folder_stage, "%s.npz" % case_identifier),
@@ -577,7 +584,8 @@ class Preprocessor3DBetterResampling(GenericPreprocessor):
 
 
 class PreprocessorFor2D(GenericPreprocessor):
-    def __init__(self, normalization_scheme_per_modality, use_nonzero_mask, transpose_forward: (tuple, list), intensityproperties=None):
+    def __init__(self, normalization_scheme_per_modality, use_nonzero_mask, transpose_forward: (tuple, list),
+                 intensityproperties=None):
         super(PreprocessorFor2D, self).__init__(normalization_scheme_per_modality, use_nonzero_mask,
                                                 transpose_forward, intensityproperties)
 
@@ -705,7 +713,7 @@ class PreprocessorFor3D_LeaveOriginalZSpacing(GenericPreprocessor):
         target_spacing = deepcopy(target_spacing)
         if target_spacing[0] is None or np.isnan(target_spacing[0]):
             target_spacing[0] = original_spacing_transposed[0]
-        #print(target_spacing, original_spacing_transposed)
+        # print(target_spacing, original_spacing_transposed)
         data, seg = resample_patient(data, seg, np.array(original_spacing_transposed), target_spacing, 3, 1,
                                      force_separate_z=force_separate_z, order_z_data=0, order_z_seg=0,
                                      separate_z_anisotropy_threshold=self.resample_separate_z_anisotropy_threshold)
@@ -794,7 +802,7 @@ class PreprocessorFor3D_NoResampling(GenericPreprocessor):
         # remove nans
         data[np.isnan(data)] = 0
         target_spacing = deepcopy(original_spacing_transposed)
-        #print(target_spacing, original_spacing_transposed)
+        # print(target_spacing, original_spacing_transposed)
         data, seg = resample_patient(data, seg, np.array(original_spacing_transposed), target_spacing, 3, 1,
                                      force_separate_z=force_separate_z, order_z_data=0, order_z_seg=0,
                                      separate_z_anisotropy_threshold=self.resample_separate_z_anisotropy_threshold)

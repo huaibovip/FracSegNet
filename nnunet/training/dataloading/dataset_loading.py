@@ -215,7 +215,7 @@ class DataLoader3D(SlimDataLoaderBase):
             case_all_data = np.load(self._data[k]['data_file'][:-4] + ".npy", self.memmap_mode)
         else:
             case_all_data = np.load(self._data[k]['data_file'])['data']
-        num_color_channels = case_all_data.shape[0] - 1
+        num_color_channels = case_all_data.shape[0] - 2
         data_shape = (self.batch_size, num_color_channels, *self.patch_size)
         seg_shape = (self.batch_size, num_seg, *self.patch_size)
         return data_shape, seg_shape
@@ -224,6 +224,7 @@ class DataLoader3D(SlimDataLoaderBase):
         selected_keys = np.random.choice(self.list_of_keys, self.batch_size, True, None)
         data = np.zeros(self.data_shape, dtype=np.float32)
         seg = np.zeros(self.seg_shape, dtype=np.float32)
+        disMap = np.zeros(self.seg_shape,dtype=np.float32)
         case_properties = []
         for j, i in enumerate(selected_keys):
             # oversampling foreground will improve stability of model training, especially if many patches are empty
@@ -355,17 +356,22 @@ class DataLoader3D(SlimDataLoaderBase):
                                           valid_bbox_y_lb:valid_bbox_y_ub,
                                           valid_bbox_z_lb:valid_bbox_z_ub]
 
-            data[j] = np.pad(case_all_data[:-1], ((0, 0),
+            data[j] = np.pad(case_all_data[:-2], ((0, 0),
                                                   (-min(0, bbox_x_lb), max(bbox_x_ub - shape[0], 0)),
                                                   (-min(0, bbox_y_lb), max(bbox_y_ub - shape[1], 0)),
                                                   (-min(0, bbox_z_lb), max(bbox_z_ub - shape[2], 0))),
                              self.pad_mode, **self.pad_kwargs_data)
 
-            seg[j, 0] = np.pad(case_all_data[-1:], ((0, 0),
+            seg[j, 0] = np.pad(case_all_data[-2:-1], ((0, 0),
                                                     (-min(0, bbox_x_lb), max(bbox_x_ub - shape[0], 0)),
                                                     (-min(0, bbox_y_lb), max(bbox_y_ub - shape[1], 0)),
                                                     (-min(0, bbox_z_lb), max(bbox_z_ub - shape[2], 0))),
                                'constant', **{'constant_values': -1})
+            disMap[j, 0] = np.pad(case_all_data[-1:], ((0, 0),
+                                                    (-min(0, bbox_x_lb), max(bbox_x_ub - shape[0], 0)),
+                                                    (-min(0, bbox_y_lb), max(bbox_y_ub - shape[1], 0)),
+                                                    (-min(0, bbox_z_lb), max(bbox_z_ub - shape[2], 0))),
+                               'constant', **{'constant_values': 0.2})
             if seg_from_previous_stage is not None:
                 seg[j, 1] = np.pad(seg_from_previous_stage, ((0, 0),
                                                              (-min(0, bbox_x_lb),
@@ -376,7 +382,7 @@ class DataLoader3D(SlimDataLoaderBase):
                                                               max(bbox_z_ub - shape[2], 0))),
                                    'constant', **{'constant_values': 0})
 
-        return {'data': data, 'seg': seg, 'properties': case_properties, 'keys': selected_keys}
+        return {'data': data, 'seg': seg, 'disMap': disMap , 'properties': case_properties, 'keys': selected_keys}
 
 
 class DataLoader2D(SlimDataLoaderBase):
@@ -594,7 +600,7 @@ class DataLoader2D(SlimDataLoaderBase):
 
 
 if __name__ == "__main__":
-    t = "Task002_Heart"
+    t = "Task666_FracSegNet"
     p = join(preprocessing_output_dir, t, "stage1")
     dataset = load_dataset(p)
     with open(join(join(preprocessing_output_dir, t), "plans_stage1.pkl"), 'rb') as f:
@@ -603,5 +609,3 @@ if __name__ == "__main__":
     dl = DataLoader3D(dataset, (32, 32, 32), (32, 32, 32), 2, oversample_foreground_percent=0.33)
     dl = DataLoader3D(dataset, np.array(plans['patch_size']).astype(int), np.array(plans['patch_size']).astype(int), 2,
                       oversample_foreground_percent=0.33)
-    dl2d = DataLoader2D(dataset, (64, 64), np.array(plans['patch_size']).astype(int)[1:], 12,
-                        oversample_foreground_percent=0.33)

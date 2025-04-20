@@ -146,11 +146,14 @@ def get_moreDA_augmentation(dataloader_train, dataloader_val, patch_size, params
         if soft_ds:
             assert classes is not None
             tr_transforms.append(DownsampleSegForDSTransform3(deep_supervision_scales, 'target', 'target', classes))
+            tr_transforms.append(DownsampleSegForDSTransform3(deep_supervision_scales, 'disMap', 'disMap', classes))
         else:
             tr_transforms.append(DownsampleSegForDSTransform2(deep_supervision_scales, 0, input_key='target',
                                                               output_key='target'))
+            tr_transforms.append(DownsampleSegForDSTransform2(deep_supervision_scales, 0, input_key='disMap',
+                                                              output_key='disMap'))
 
-    tr_transforms.append(NumpyToTensor(['data', 'target'], 'float'))
+    tr_transforms.append(NumpyToTensor(['data', 'target','disMap'], 'float'))
     tr_transforms = Compose(tr_transforms)
 
     if use_nondetMultiThreadedAugmenter:
@@ -185,11 +188,14 @@ def get_moreDA_augmentation(dataloader_train, dataloader_val, patch_size, params
         if soft_ds:
             assert classes is not None
             val_transforms.append(DownsampleSegForDSTransform3(deep_supervision_scales, 'target', 'target', classes))
+            val_transforms.append(DownsampleSegForDSTransform3(deep_supervision_scales, 'disMap', 'disMap', classes))
         else:
             val_transforms.append(DownsampleSegForDSTransform2(deep_supervision_scales, 0, input_key='target',
                                                                output_key='target'))
+            val_transforms.append(DownsampleSegForDSTransform2(deep_supervision_scales, 0, input_key='disMap',
+                                                               output_key='disMap'))
 
-    val_transforms.append(NumpyToTensor(['data', 'target'], 'float'))
+    val_transforms.append(NumpyToTensor(['data', 'target','disMap'], 'float'))
     val_transforms = Compose(val_transforms)
 
     if use_nondetMultiThreadedAugmenter:

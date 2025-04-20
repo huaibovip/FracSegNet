@@ -84,8 +84,8 @@ def load_case_from_list_of_files(data_files, seg_file=None):
 def crop_to_nonzero(data, seg=None, nonzero_label=-1):
     """
 
-    :param data:
-    :param seg:
+    :param data: input data
+    :param seg: input segmentation mask
     :param nonzero_label: this will be written into the segmentation map
     :return:
     """
@@ -107,7 +107,7 @@ def crop_to_nonzero(data, seg=None, nonzero_label=-1):
 
     nonzero_mask = crop_to_bbox(nonzero_mask, bbox)[None]
     if seg is not None:
-        seg[(seg == 0) & (nonzero_mask == 0)] = nonzero_label
+        seg[seg == 0] = nonzero_label
     else:
         nonzero_mask = nonzero_mask.astype(int)
         nonzero_mask[nonzero_mask == 0] = nonzero_label
@@ -157,16 +157,12 @@ class ImageCropper(object):
     def load_crop_save(self, case, case_identifier, overwrite_existing=False):
         try:
             print(case_identifier)
-            if overwrite_existing \
-                    or (not os.path.isfile(os.path.join(self.output_folder, "%s.npz" % case_identifier))
-                        or not os.path.isfile(os.path.join(self.output_folder, "%s.pkl" % case_identifier))):
-
-                data, seg, properties = self.crop_from_list_of_files(case[:-1], case[-1])
-
-                all_data = np.vstack((data, seg))
-                np.savez_compressed(os.path.join(self.output_folder, "%s.npz" % case_identifier), data=all_data)
-                with open(os.path.join(self.output_folder, "%s.pkl" % case_identifier), 'wb') as f:
-                    pickle.dump(properties, f)
+            data, seg, properties = self.crop_from_list_of_files(case[:-1], case[-1])
+            # ======vstack data======
+            all_data = np.vstack((data, seg))
+            np.savez_compressed(os.path.join(self.output_folder, "%s.npz" % case_identifier), data=all_data)
+            with open(os.path.join(self.output_folder, "%s.pkl" % case_identifier), 'wb') as f:
+                pickle.dump(properties, f)
         except Exception as e:
             print("Exception in", case_identifier, ":")
             print(e)
@@ -201,6 +197,8 @@ class ImageCropper(object):
             case_identifier = get_case_identifier(case)
             list_of_args.append((case, case_identifier, overwrite_existing))
 
+        print('list_of_args:', list_of_args)
+        print('load_crop_save:', self.load_crop_save)
         p = Pool(self.num_threads)
         p.starmap(self.load_crop_save, list_of_args)
         p.close()

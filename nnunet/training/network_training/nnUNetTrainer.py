@@ -105,7 +105,7 @@ class nnUNetTrainer(NetworkTrainer):
         self.basic_generator_patch_size = self.data_aug_params = self.transpose_forward = self.transpose_backward = None
 
         self.batch_dice = batch_dice
-        self.loss = DC_and_CE_loss({'batch_dice': self.batch_dice, 'smooth': 1e-5, 'do_bg': False}, {})
+        self.loss = DC_and_CE_loss({'batch_dice': self.batch_dice, 'smooth': 1e-5, 'do_bg': False}, {}, disMap_weight=None, epoch = None)
 
         self.online_eval_foreground_dc = []
         self.online_eval_tp = []
@@ -214,6 +214,7 @@ class nnUNetTrainer(NetworkTrainer):
                 self.print_to_log_file(
                     "INFO: Not unpacking data! Training may be slow due to that. Pray you are not using 2d or you "
                     "will wait all winter for your model to finish!")
+            print('self.data_aug_params:', self.data_aug_params)
             self.tr_gen, self.val_gen = get_default_augmentation(self.dl_tr, self.dl_val,
                                                                  self.data_aug_params[
                                                                      'patch_size_for_spatialtransform'],
@@ -522,6 +523,30 @@ class nnUNetTrainer(NetworkTrainer):
                                       mixed_precision=mixed_precision)
         self.network.train(current_mode)
         return ret
+
+    def predict_preprocessed_data_return_softmax(self, data, do_mirroring, num_repeats, use_train_mode, batch_size,
+                                                 mirror_axes, tiled, tile_in_z, step, min_size, use_gaussian):
+        """
+        Don't use this. If you need softmax output, use preprocess_predict_nifti and set softmax_output_file. ### todo:???
+        :param data:
+        :param do_mirroring:
+        :param num_repeats:
+        :param use_train_mode:
+        :param batch_size:
+        :param mirror_axes:
+        :param tiled:
+        :param tile_in_z:
+        :param step:
+        :param min_size:
+        :param use_gaussian:
+        :param use_temporal:
+        :return:
+        """
+        assert isinstance(self.network, (SegmentationNetwork, nn.DataParallel))
+        return self.network.predict_3D_inference(data, do_mirroring, num_repeats, use_train_mode, batch_size, mirror_axes,
+                                       tiled, tile_in_z, step, min_size, use_gaussian=use_gaussian,
+                                       pad_border_mode=self.inference_pad_border_mode,
+                                       pad_kwargs=self.inference_pad_kwargs)[2]
 
     def validate(self, do_mirroring: bool = True, use_sliding_window: bool = True, step_size: float = 0.5,
                  save_softmax: bool = True, use_gaussian: bool = True, overwrite: bool = True,

@@ -21,7 +21,9 @@ setup(name='nnunet',
             "SimpleITK",
             "pandas",
             "requests",
-            "nibabel", 'tifffile'
+            "nibabel",
+            'tifffile',
+            'vtk',
       ],
       entry_points={
           'console_scripts': [
