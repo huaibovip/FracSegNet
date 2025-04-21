@@ -3,34 +3,37 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def boneData(Vdir,maskdir,label):
+def boneData(Vdir, maskdir, label):
     # 0.load
     V = sitk.ReadImage(Vdir)
-    mask =  sitk.ReadImage(maskdir)
+    mask = sitk.ReadImage(maskdir)
     # 1. scale
     img_T1 = sitk.Cast(sitk.RescaleIntensity(V), sitk.sitkUInt8)
     # 2. extract pelvic
-    itk_skeleton = GetLabelImage(img_T1, mask,label)
-    itk_skeleton_scale = sitk.Cast(sitk.RescaleIntensity(itk_skeleton), sitk.sitkUInt8)
+    itk_skeleton = GetLabelImage(img_T1, mask, label)
+    itk_skeleton_scale = sitk.Cast(sitk.RescaleIntensity(itk_skeleton),
+                                   sitk.sitkUInt8)
     # resample
     itk_skeleton_reshape = ImageResample(itk_skeleton_scale)
     # 3. basic params
-    itk_skeleton_reshape.SetOrigin=[0,0,0]
+    itk_skeleton_reshape.SetOrigin = [0, 0, 0]
     showParams(itk_skeleton_reshape)
     # 4. show fusion image
     #sitk.Show(sitk.LabelOverlay(itk_skeleton_scale, mask))
     #sitk.Show(itk_skeleton_scale)
     return itk_skeleton_reshape
 
-def pelvisData(Vdir,maskdir):
+
+def pelvisData(Vdir, maskdir):
     # 0.load
     V = sitk.ReadImage(Vdir)
-    mask =  sitk.ReadImage(maskdir)
+    mask = sitk.ReadImage(maskdir)
     # 1. scale
     img_T1 = sitk.Cast(sitk.RescaleIntensity(V), sitk.sitkUInt8)
     # 2. extract pelvic
     itk_skeleton = GetMaskImage(img_T1, mask)
-    itk_skeleton_scale = sitk.Cast(sitk.RescaleIntensity(itk_skeleton), sitk.sitkUInt8)
+    itk_skeleton_scale = sitk.Cast(sitk.RescaleIntensity(itk_skeleton),
+                                   sitk.sitkUInt8)
     # resample
     itk_skeleton_reshape = ImageResample(itk_skeleton_scale)
     # 3. basic params
@@ -41,10 +44,11 @@ def pelvisData(Vdir,maskdir):
     #sitk.Show(itk_skeleton_scale)
     return itk_skeleton_reshape
 
-def pelvisOriginData(Vdir,maskdir):
+
+def pelvisOriginData(Vdir, maskdir):
     # 0.load
     img_T1 = sitk.ReadImage(Vdir)
-    mask =  sitk.ReadImage(maskdir)
+    mask = sitk.ReadImage(maskdir)
     # 1. scale
     # img_T1 = sitk.Cast(sitk.RescaleIntensity(V), sitk.sitkUInt8)
     # 2. extract pelvic
@@ -60,6 +64,7 @@ def pelvisOriginData(Vdir,maskdir):
     #sitk.Show(itk_skeleton_scale)
     return itk_skeleton_reshape
 
+
 def GetMaskImage(sitk_src, sitk_mask, replacevalue=0):
     array_src = sitk.GetArrayFromImage(sitk_src)
     array_mask = sitk.GetArrayFromImage(sitk_mask)
@@ -71,7 +76,8 @@ def GetMaskImage(sitk_src, sitk_mask, replacevalue=0):
     outmask_sitk.SetOrigin(sitk_src.GetOrigin())
     return outmask_sitk
 
-def GetLabelImage(sitk_src, sitk_mask, label ,replacevalue=0):
+
+def GetLabelImage(sitk_src, sitk_mask, label, replacevalue=0):
     array_src = sitk.GetArrayFromImage(sitk_src)
     array_mask = sitk.GetArrayFromImage(sitk_mask)
     array_out = array_src.copy()
@@ -84,14 +90,16 @@ def GetLabelImage(sitk_src, sitk_mask, label ,replacevalue=0):
     outmask_sitk.SetOrigin(sitk_src.GetOrigin())
     return outmask_sitk
 
-def showParams(itk_skeleton):
-    print('size:',itk_skeleton.GetSize())
-    print('spacing:',itk_skeleton.GetSpacing())
-    print('origin:',itk_skeleton.GetOrigin())
-    print('Direction:',itk_skeleton.GetDirection())
-    print('PixelType:',itk_skeleton.GetPixelIDTypeAsString())
 
-def ImageResample(sitk_image, new_spacing = [1.0, 1.0, 1.0], is_label = False):
+def showParams(itk_skeleton):
+    print('size:', itk_skeleton.GetSize())
+    print('spacing:', itk_skeleton.GetSpacing())
+    print('origin:', itk_skeleton.GetOrigin())
+    print('Direction:', itk_skeleton.GetDirection())
+    print('PixelType:', itk_skeleton.GetPixelIDTypeAsString())
+
+
+def ImageResample(sitk_image, new_spacing=[1.0, 1.0, 1.0], is_label=False):
     '''
     sitk_image:
     new_spacing: x,y,z
@@ -120,11 +128,13 @@ def ImageResample(sitk_image, new_spacing = [1.0, 1.0, 1.0], is_label = False):
     newimage = resample.Execute(sitk_image)
     return newimage
 
+
 # input: ct_origin_fileName,ct_label_fileName,label output:frac_Grayscale==label
 def extractSingleFrac(ct_scale_img, ct_label_img, label):
     # ct_origin_img = sitk.ReadImage(ct_origin_fileName)
     # ct_label_img = sitk.ReadImage(ct_label_fileName)
-    ct_origin_arr = sitk.GetArrayFromImage(ct_scale_img)  # get array from image
+    ct_origin_arr = sitk.GetArrayFromImage(
+        ct_scale_img)  # get array from image
     ct_label_arr = sitk.GetArrayFromImage(ct_label_img)  # get array from image
     frac_Grayscale = ct_origin_arr.copy()
     frac_img_norm = ct_origin_arr.copy()
@@ -144,6 +154,8 @@ def extractSingleFrac(ct_scale_img, ct_label_img, label):
     frac_Grayscale.SetOrigin(ct_scale_img.GetOrigin())
 
     return frac_Grayscale, frac_img_norm
+
+
 # - ---------------------------------------------------------------------image show ------------------------------------------------
 # Callback invoked by the interact IPython method for scrolling through the image stacks of
 # the two images (moving and fixed).
@@ -164,4 +176,3 @@ def display_images(fixed_image_z, moving_image_z, fixed_npa, moving_npa):
     plt.axis("off")
 
     plt.show()
-

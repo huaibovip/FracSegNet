@@ -1,0 +1,77 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "nnUNet_plan_and_preprocess",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "nnunet/experiment_planning/nnUNet_plan_and_preprocess.py",
+            "console": "integratedTerminal",
+            "env": {
+                "nnUNet_raw_data_base": "/home/hb/projects/vscode/FracSegNet/dataset/nnUNet_raw",
+                "nnUNet_preprocessed": "/home/hb/projects/vscode/FracSegNet/dataset/nnUNet_preprocessed",
+                "RESULTS_FOLDER": "/home/hb/projects/vscode/FracSegNet/dataset/nnUNet_trained_models",
+            },
+            "args": [
+                "-t", "600",
+                "--verify_dataset_integrity",
+            ]
+        },
+        {
+            "name": "nnUNet_predict(stage1)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "nnunet/inference/predict_simple.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "nnUNet_raw_data_base": "/home/hb/projects/vscode/FracSegNet/dataset/nnUNet_raw",
+                "nnUNet_preprocessed": "/home/hb/projects/vscode/FracSegNet/dataset/nnUNet_preprocessed",
+                "RESULTS_FOLDER": "/home/hb/projects/vscode/FracSegNet/dataset/nnUNet_trained_models",
+            },
+            "args": [
+                "-m", "3d_cascade_fullres",
+                "--disable_tta",
+                "-t", "600",
+                "-f", "all",
+                "-i", "dataset/test_data",
+                "-o", "Result/001",
+            ]
+        },
+        {
+            "name": "nnUNet_extract(stage2)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "nnunet/inference/extract_ct_regions.py",
+            "console": "integratedTerminal",
+            "env": {
+                "nnUNet_raw_data_base": "/home/hb/projects/vscode/FracSegNet/dataset/nnUNet_raw",
+                "nnUNet_preprocessed": "/home/hb/projects/vscode/FracSegNet/dataset/nnUNet_preprocessed",
+                "RESULTS_FOLDER": "/home/hb/projects/vscode/FracSegNet/dataset/nnUNet_trained_models",
+            },
+            "args": [
+                "-i", "dataset/test_data",
+                "-o", "Result/001",
+            ]
+        },
+        {
+            "name": "nnUNet_predict(stage3)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "nnunet/inference/predict_simple.py",
+            "console": "integratedTerminal",
+            "env": {
+                "nnUNet_raw_data_base": "/home/hb/projects/vscode/FracSegNet/dataset/nnUNet_raw",
+                "nnUNet_preprocessed": "/home/hb/projects/vscode/FracSegNet/dataset/nnUNet_preprocessed",
+                "RESULTS_FOLDER": "/home/hb/projects/vscode/FracSegNet/dataset/nnUNet_trained_models",
+            },
+            "args": [
+                "-m", "3d_fullres",
+                "-t", "600",
+                "-f", "all",
+                "-i", "dataset/test_data",
+                "-o", "Result/001",
+            ]
+        },
+    ]
+}
