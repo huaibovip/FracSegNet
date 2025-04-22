@@ -12,7 +12,6 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-
 import torch
 from nnunet.training.loss_functions.TopK_loss import TopKLoss
 from nnunet.training.loss_functions.crossentropy import RobustCrossEntropyLoss
@@ -25,8 +24,14 @@ from nnunet.training.network_training.network_trainer import NetworkTrainer
 
 
 class GDL(nn.Module):
-    def __init__(self, apply_nonlin=None, batch_dice=False, do_bg=True, smooth=1.,
-                 square=False, square_volumes=False):
+
+    def __init__(self,
+                 apply_nonlin=None,
+                 batch_dice=False,
+                 do_bg=True,
+                 smooth=1.,
+                 square=False,
+                 square_volumes=False):
         """
         square_volumes will square the weight term. The paper recommends square_volumes=True; I don't (just an intuition)
         """
@@ -68,13 +73,15 @@ class GDL(nn.Module):
             x = x[:, 1:]
             y_onehot = y_onehot[:, 1:]
 
-        tp, fp, fn, _ = get_tp_fp_fn_tn(x, y_onehot, axes, loss_mask, self.square)
+        tp, fp, fn, _ = get_tp_fp_fn_tn(x, y_onehot, axes, loss_mask,
+                                        self.square)
 
         # GDL weight computation, we use 1/V
-        volumes = sum_tensor(y_onehot, axes) + 1e-6  # add some eps to prevent div by zero
+        volumes = sum_tensor(
+            y_onehot, axes) + 1e-6  # add some eps to prevent div by zero
 
         if self.square_volumes:
-            volumes = volumes ** 2
+            volumes = volumes**2
 
         # apply weights
         tp = tp / volumes
@@ -99,7 +106,13 @@ class GDL(nn.Module):
         return -dc
 
 
-def get_tp_fp_fn_tn(net_output, gt, disMap = None, axes=None, mask=None, square=False ,current_epoch = None):
+def get_tp_fp_fn_tn(net_output,
+                    gt,
+                    disMap=None,
+                    axes=None,
+                    mask=None,
+                    square=False,
+                    current_epoch=None):
     """
     net_output must be (b, c, x, y(, z)))
     gt must be a label map (shape (b, 1, x, y(, z)) OR shape (b, x, y(, z))) or one hot encoding (b, c, x, y(, z))
@@ -123,12 +136,14 @@ def get_tp_fp_fn_tn(net_output, gt, disMap = None, axes=None, mask=None, square=
     if smooth_trans == True:
         if disMap != None:
             disMap = disMap / torch.mean(disMap)
-            if current_epoch <Tauo_st:
+            if current_epoch < Tauo_st:
                 temp_disMap_value = torch.ones_like(disMap)
-            elif Tauo_st <= current_epoch < Tauo_st + st_epoch :
+            elif Tauo_st <= current_epoch < Tauo_st + st_epoch:
                 warm_start_matrix = torch.ones_like(disMap)
-                warm_para = float(Tauo_st + st_epoch - current_epoch) / st_epoch
-                temp_disMap_value = warm_para * warm_start_matrix + (1 - warm_para) * disMap
+                warm_para = float(Tauo_st + st_epoch -
+                                  current_epoch) / st_epoch
+                temp_disMap_value = warm_para * warm_start_matrix + (
+                    1 - warm_para) * disMap
             elif current_epoch >= Tauo_st + st_epoch:
                 temp_disMap_value = disMap
 
@@ -154,7 +169,7 @@ def get_tp_fp_fn_tn(net_output, gt, disMap = None, axes=None, mask=None, square=
             if net_output.device.type == "cuda":
                 y_onehot = y_onehot.cuda(net_output.device.index)
             y_onehot.scatter_(1, gt, 1)
-    disMap2onehot = disMap.repeat_interleave(shp_x[1],dim = 1)
+    disMap2onehot = disMap.repeat_interleave(shp_x[1], dim=1)
 
     disMap2onehot = disMap2onehot.cuda(net_output.device.index)
 
@@ -169,16 +184,24 @@ def get_tp_fp_fn_tn(net_output, gt, disMap = None, axes=None, mask=None, square=
     tn = torch.mul(tn, disMap2onehot)
 
     if mask is not None:
-        tp = torch.stack(tuple(x_i * mask[:, 0] for x_i in torch.unbind(tp, dim=1)), dim=1)
-        fp = torch.stack(tuple(x_i * mask[:, 0] for x_i in torch.unbind(fp, dim=1)), dim=1)
-        fn = torch.stack(tuple(x_i * mask[:, 0] for x_i in torch.unbind(fn, dim=1)), dim=1)
-        tn = torch.stack(tuple(x_i * mask[:, 0] for x_i in torch.unbind(tn, dim=1)), dim=1)
+        tp = torch.stack(tuple(x_i * mask[:, 0]
+                               for x_i in torch.unbind(tp, dim=1)),
+                         dim=1)
+        fp = torch.stack(tuple(x_i * mask[:, 0]
+                               for x_i in torch.unbind(fp, dim=1)),
+                         dim=1)
+        fn = torch.stack(tuple(x_i * mask[:, 0]
+                               for x_i in torch.unbind(fn, dim=1)),
+                         dim=1)
+        tn = torch.stack(tuple(x_i * mask[:, 0]
+                               for x_i in torch.unbind(tn, dim=1)),
+                         dim=1)
 
     if square:
-        tp = tp ** 2
-        fp = fp ** 2
-        fn = fn ** 2
-        tn = tn ** 2
+        tp = tp**2
+        fp = fp**2
+        fn = fn**2
+        tn = tn**2
 
     if len(axes) > 0:
         tp = sum_tensor(tp, axes, keepdim=False)
@@ -190,7 +213,12 @@ def get_tp_fp_fn_tn(net_output, gt, disMap = None, axes=None, mask=None, square=
 
 
 class SoftDiceLoss(nn.Module):
-    def __init__(self, apply_nonlin=None, batch_dice=False, do_bg=True, smooth=1.):
+
+    def __init__(self,
+                 apply_nonlin=None,
+                 batch_dice=False,
+                 do_bg=True,
+                 smooth=1.):
         """
         """
         super(SoftDiceLoss, self).__init__()
@@ -211,7 +239,11 @@ class SoftDiceLoss(nn.Module):
         if self.apply_nonlin is not None:
             x = self.apply_nonlin(x)
 
-        tp, fp, fn, _ = get_tp_fp_fn_tn(x, y, axes, loss_mask, False)
+        tp, fp, fn, _ = get_tp_fp_fn_tn(x,
+                                        y,
+                                        axes=axes,
+                                        mask=loss_mask,
+                                        square=False)
 
         nominator = 2 * tp + self.smooth
         denominator = 2 * tp + fp + fn + self.smooth
@@ -229,7 +261,12 @@ class SoftDiceLoss(nn.Module):
 
 
 class MCCLoss(nn.Module):
-    def __init__(self, apply_nonlin=None, batch_mcc=False, do_bg=True, smooth=0.0):
+
+    def __init__(self,
+                 apply_nonlin=None,
+                 batch_mcc=False,
+                 do_bg=True,
+                 smooth=0.0):
         """
         based on matthews correlation coefficient
         https://en.wikipedia.org/wiki/Matthews_correlation_coefficient
@@ -262,7 +299,8 @@ class MCCLoss(nn.Module):
         tn /= voxels
 
         nominator = tp * tn - fp * fn + self.smooth
-        denominator = ((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn)) ** 0.5 + self.smooth
+        denominator = ((tp + fp) * (tp + fn) * (tn + fp) *
+                       (tn + fn))**0.5 + self.smooth
 
         mcc = nominator / denominator
 
@@ -277,7 +315,12 @@ class MCCLoss(nn.Module):
 
 
 class SoftDiceLossSquared(nn.Module):
-    def __init__(self, apply_nonlin=None, batch_dice=False, do_bg=True, smooth=1.):
+
+    def __init__(self,
+                 apply_nonlin=None,
+                 batch_dice=False,
+                 do_bg=True,
+                 smooth=1.):
         """
         squares the terms in the denominator as proposed by Milletari et al.
         """
@@ -316,7 +359,7 @@ class SoftDiceLossSquared(nn.Module):
 
         intersect = x * y_onehot
         # values in the denominator get smoothed
-        denominator = x ** 2 + y_onehot ** 2
+        denominator = x**2 + y_onehot**2
 
         # aggregation was previously done in get_tp_fp_fn, but needs to be done here now (needs to be done after
         # squaring)
@@ -336,6 +379,7 @@ class SoftDiceLossSquared(nn.Module):
 
 
 class DC_and_CE_loss(nn.Module):
+
     def __init__(self,
                  soft_dice_kwargs,
                  ce_kwargs,
@@ -369,11 +413,13 @@ class DC_and_CE_loss(nn.Module):
         self.ignore_label = ignore_label
 
         if not square_dice:
-            self.dc = SoftDiceLoss(apply_nonlin=softmax_helper, **soft_dice_kwargs)
+            self.dc = SoftDiceLoss(apply_nonlin=softmax_helper,
+                                   **soft_dice_kwargs)
         else:
-            self.dc = SoftDiceLossSquared(apply_nonlin=softmax_helper, **soft_dice_kwargs)
+            self.dc = SoftDiceLossSquared(apply_nonlin=softmax_helper,
+                                          **soft_dice_kwargs)
 
-    def forward(self, net_output, target, disMap_weight = None,epoch =None):
+    def forward(self, net_output, target, disMap_weight=None, epoch=None):
         """
         target must be b, c, x, y(, z) with c=1
         :param net_output:
@@ -389,10 +435,15 @@ class DC_and_CE_loss(nn.Module):
         else:
             mask = None
 
-        dc_loss = self.dc(net_output, target, disMap_weight, loss_mask=mask, current_epoch = epoch) if self.weight_dice != 0 else 0
+        dc_loss = self.dc(net_output,
+                          target,
+                          disMap_weight,
+                          loss_mask=mask,
+                          current_epoch=epoch) if self.weight_dice != 0 else 0
         if self.log_dice:
             dc_loss = -torch.log(-dc_loss)
-        ce_loss = self.ce(net_output, target[:, 0].long(),disMap_weight[:,0],epoch)
+        ce_loss = self.ce(net_output, target[:, 0].long(), disMap_weight[:, 0],
+                          epoch)
         ce_loss = torch.mean(ce_loss)
         if self.ignore_label is not None:
             ce_loss *= mask[:, 0]
@@ -403,7 +454,9 @@ class DC_and_CE_loss(nn.Module):
             raise NotImplementedError("Calculate Loss Error.")
         return result
 
+
 class DC_and_BCE_loss(nn.Module):
+
     def __init__(self, bce_kwargs, soft_dice_kwargs, aggregate="sum"):
         """
         DO NOT APPLY NONLINEARITY IN YOUR NETWORK!
@@ -426,12 +479,14 @@ class DC_and_BCE_loss(nn.Module):
         if self.aggregate == "sum":
             result = ce_loss + dc_loss
         else:
-            raise NotImplementedError("nah son")  # reserved for other stuff (later)
+            raise NotImplementedError(
+                "nah son")  # reserved for other stuff (later)
 
         return result
 
 
 class GDL_and_CE_loss(nn.Module):
+
     def __init__(self, gdl_dice_kwargs, ce_kwargs, aggregate="sum"):
         super(GDL_and_CE_loss, self).__init__()
         self.aggregate = aggregate
@@ -444,19 +499,27 @@ class GDL_and_CE_loss(nn.Module):
         if self.aggregate == "sum":
             result = ce_loss + dc_loss
         else:
-            raise NotImplementedError("nah son")  # reserved for other stuff (later)
+            raise NotImplementedError(
+                "nah son")  # reserved for other stuff (later)
         return result
 
 
 class DC_and_topk_loss(nn.Module):
-    def __init__(self, soft_dice_kwargs, ce_kwargs, aggregate="sum", square_dice=False):
+
+    def __init__(self,
+                 soft_dice_kwargs,
+                 ce_kwargs,
+                 aggregate="sum",
+                 square_dice=False):
         super(DC_and_topk_loss, self).__init__()
         self.aggregate = aggregate
         self.ce = TopKLoss(**ce_kwargs)
         if not square_dice:
-            self.dc = SoftDiceLoss(apply_nonlin=softmax_helper, **soft_dice_kwargs)
+            self.dc = SoftDiceLoss(apply_nonlin=softmax_helper,
+                                   **soft_dice_kwargs)
         else:
-            self.dc = SoftDiceLossSquared(apply_nonlin=softmax_helper, **soft_dice_kwargs)
+            self.dc = SoftDiceLossSquared(apply_nonlin=softmax_helper,
+                                          **soft_dice_kwargs)
 
     def forward(self, net_output, target):
         dc_loss = self.dc(net_output, target)
@@ -464,5 +527,6 @@ class DC_and_topk_loss(nn.Module):
         if self.aggregate == "sum":
             result = ce_loss + dc_loss
         else:
-            raise NotImplementedError("nah son")  # reserved for other stuff (later?)
+            raise NotImplementedError(
+                "nah son")  # reserved for other stuff (later?)
         return result

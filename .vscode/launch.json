@@ -14,7 +14,26 @@
             },
             "args": [
                 "-t", "600",
+                "-pl2d", "None",
                 "--verify_dataset_integrity",
+            ]
+        },
+        {
+            "name": "nnUNet_train",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "nnunet/run/run_training.py",
+            "console": "integratedTerminal",
+            "env": {
+                "nnUNet_raw_data_base": "/home/hb/projects/vscode/FracSegNet/dataset/nnUNet_raw",
+                "nnUNet_preprocessed": "/home/hb/projects/vscode/FracSegNet/dataset/nnUNet_preprocessed",
+                "RESULTS_FOLDER": "/home/hb/projects/vscode/FracSegNet/dataset/nnUNet_trained_models",
+            },
+            "args": [
+                "3d_fullres",
+                "nnUNetTrainerV2",
+                "Task600_CT_PelvicFrac150",
+                "all"
             ]
         },
         {
