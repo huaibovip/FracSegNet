@@ -17,7 +17,7 @@ from batchgenerators.transforms.abstract_transforms import AbstractTransform
 from batchgenerators.augmentations.spatial_transformations import augment_spatial, augment_spatial_2, \
     augment_channel_translation, \
     augment_mirroring, augment_transpose_axes, augment_zoom, augment_resize, augment_rot90, \
-    augment_anatomy_informed, augment_misalign
+    augment_anatomy_informed, augment_misalign, augment_spatial_with_dismap
 import numpy as np
 from batchgenerators.augmentations.utils import get_organ_gradient_field
 
@@ -195,6 +195,7 @@ class MirrorTransform(AbstractTransform):
         self.p_per_sample = p_per_sample
         self.data_key = data_key
         self.label_key = label_key
+        self.dismap_key = 'disMap'
         self.axes = axes
         if max(axes) > 2:
             raise ValueError("MirrorTransform now takes the axes as the spatial dimensions. What previously was "
@@ -204,20 +205,28 @@ class MirrorTransform(AbstractTransform):
     def __call__(self, **data_dict):
         data = data_dict.get(self.data_key)
         seg = data_dict.get(self.label_key)
+        dismap = data_dict.get(self.dismap_key)
 
         for b in range(len(data)):
             if np.random.uniform() < self.p_per_sample:
                 sample_seg = None
+                sample_dismap = None
                 if seg is not None:
                     sample_seg = seg[b]
-                ret_val = augment_mirroring(data[b], sample_seg, axes=self.axes)
+                if dismap is not None:
+                    sample_dismap = dismap[b]
+                ret_val = augment_mirroring(data[b], sample_seg, axes=self.axes, sample_dismap=sample_dismap)
                 data[b] = ret_val[0]
                 if seg is not None:
                     seg[b] = ret_val[1]
+                if dismap is not None:
+                    dismap[b] = ret_val[2]
 
         data_dict[self.data_key] = data
         if seg is not None:
             data_dict[self.label_key] = seg
+        if dismap is not None:
+            data_dict[self.dismap_key] = dismap
 
         return data_dict
 
@@ -310,6 +319,7 @@ class SpatialTransform(AbstractTransform):
         self.p_el_per_sample = p_el_per_sample
         self.data_key = data_key
         self.label_key = label_key
+        self.dismap_key = 'disMap'
         self.patch_size = patch_size
         self.patch_center_dist_from_border = patch_center_dist_from_border
         self.do_elastic_deform = do_elastic_deform
@@ -334,6 +344,7 @@ class SpatialTransform(AbstractTransform):
     def __call__(self, **data_dict):
         data = data_dict.get(self.data_key)
         seg = data_dict.get(self.label_key)
+        dismap = data_dict.get(self.dismap_key)
 
         if self.patch_size is None:
             if len(data.shape) == 4:
@@ -345,7 +356,7 @@ class SpatialTransform(AbstractTransform):
         else:
             patch_size = self.patch_size
 
-        ret_val = augment_spatial(data, seg, patch_size=patch_size,
+        ret_val = augment_spatial_with_dismap(data, seg, dismap, patch_size=patch_size,
                                   patch_center_dist_from_border=self.patch_center_dist_from_border,
                                   do_elastic_deform=self.do_elastic_deform, alpha=self.alpha, sigma=self.sigma,
                                   do_rotation=self.do_rotation, angle_x=self.angle_x, angle_y=self.angle_y,
@@ -362,6 +373,8 @@ class SpatialTransform(AbstractTransform):
         data_dict[self.data_key] = ret_val[0]
         if seg is not None:
             data_dict[self.label_key] = ret_val[1]
+        if dismap is not None:
+            data_dict[self.dismap_key] = ret_val[2]
 
         return data_dict
 

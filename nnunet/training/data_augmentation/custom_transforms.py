@@ -26,7 +26,7 @@ class RemoveKeyTransform(AbstractTransform):
 
 
 class MaskTransform(AbstractTransform):
-    def __init__(self, dct_for_where_it_was_used, mask_idx_in_seg=1, set_outside_to=0, data_key="data", seg_key="seg"):
+    def __init__(self, dct_for_where_it_was_used, mask_idx_in_seg=1, set_outside_to=0, data_key="data", seg_key="seg", dismap_key="disMap"):
         """
         data[mask < 0] = 0
         Sets everything outside the mask to 0. CAREFUL! outside is defined as < 0, not =0 (in the Mask)!!!
@@ -40,6 +40,7 @@ class MaskTransform(AbstractTransform):
         self.dct_for_where_it_was_used = dct_for_where_it_was_used
         self.seg_key = seg_key
         self.data_key = data_key
+        self.dismap_key = dismap_key
         self.set_outside_to = set_outside_to
         self.mask_idx_in_seg = mask_idx_in_seg
 
@@ -48,12 +49,15 @@ class MaskTransform(AbstractTransform):
         if seg is None or seg.shape[1] < self.mask_idx_in_seg:
             raise Warning("mask not found, seg may be missing or seg[:, mask_idx_in_seg] may not exist")
         data = data_dict.get(self.data_key)
+        dismap = data_dict.get(self.dismap_key)
         for b in range(data.shape[0]):
             mask = seg[b, self.mask_idx_in_seg]
             for c in range(data.shape[1]):
                 if self.dct_for_where_it_was_used[c]:
                     data[b, c][mask < 0] = self.set_outside_to
+                    dismap[b, c][mask < 0] = self.set_outside_to
         data_dict[self.data_key] = data
+        data_dict[self.dismap_key] = dismap
         return data_dict
 
 

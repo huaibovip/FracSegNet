@@ -388,7 +388,7 @@ class nnUNetTrainerV2(nnUNetTrainer):
 
         self.data_aug_params["scale_range"] = (0.8, 1.2)
         self.data_aug_params["do_elastic"] = True
-        self.data_aug_params['selected_seg_channels'] = [0]
+        # self.data_aug_params['selected_seg_channels'] = [0]
         self.data_aug_params['patch_size_for_spatialtransform'] = self.patch_size
 
         self.data_aug_params["num_cached_per_thread"] = 2
