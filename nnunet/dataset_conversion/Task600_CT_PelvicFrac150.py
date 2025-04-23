@@ -18,6 +18,7 @@ data_root = join(cur_root, 'dataset', 'nnUNet_raw')
 sa_labels = set([i for i in range(1, 11)])
 li_labels = set([i for i in range(11, 21)])
 ri_labels = set([i for i in range(21, 31)])
+NUM_LABELS = 2
 
 
 def convert(in_file, out_file):
@@ -41,7 +42,8 @@ def convert_separate_fracture(in_file, out_file, sorted_roi_labels: list):
     print(f"{os.path.basename(out_file)[:-7]}\t{sorted_roi_labels}")
     img = sitk.ReadImage(in_file)
     arr = sitk.GetArrayFromImage(img)
-    num_labels = 3 if len(sorted_roi_labels) > 3 else len(sorted_roi_labels)
+    num_labels = NUM_LABELS if len(sorted_roi_labels) > NUM_LABELS else len(
+        sorted_roi_labels)
 
     new_arr = np.zeros_like(arr)
     for i in range(num_labels):
@@ -125,24 +127,6 @@ if __name__ == '__main__':
         sal.sort()
         lil.sort()
         ril.sort()
-
-        # name = []
-        # if len(sal) > 1 and 1 in sal:
-        #     name.append('SA')
-        # if len(lil) > 1 and 11 in lil:
-        #     name.append('LI')
-        # if len(ril) > 1 and 21 in ril:
-        #     name.append('RI')
-        # name = '_'.join(name)
-        # name = name if name == '' else '_' + name
-        # convert(
-        #     img_path,
-        #     join(target_imagesTr, file[:3] + name + "_0000.nii.gz"),
-        # )
-        # convert(
-        #     seg_path,
-        #     join(target_labelsTr, file[:3] + name + ".nii.gz"),
-        # )
 
         if 1 in sal:
             frac = '_frac' if len(sal) > 1 else '_none'
