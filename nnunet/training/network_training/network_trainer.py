@@ -458,6 +458,7 @@ class NetworkTrainer(object):
                 for _ in range(self.num_batches_per_epoch):
                     l = self.run_iteration(self.tr_gen, True)
                     train_losses_epoch.append(l)
+                    # self.print_to_log_file("[iter] train loss : %.4f" % np.mean(train_losses_epoch))
 
             self.all_tr_losses.append(np.mean(train_losses_epoch))
             self.print_to_log_file("train loss : %.4f" % self.all_tr_losses[-1])
@@ -649,7 +650,7 @@ class NetworkTrainer(object):
             with autocast():
                 output = self.network(data)
                 del data
-                l = self.loss(output, target, disMap,current_epoch)
+                l = self.loss(output, target, disMap, current_epoch)
                 print(l, current_epoch)
 
             if do_backprop:
@@ -659,7 +660,7 @@ class NetworkTrainer(object):
         else:
             output = self.network(data)
             del data
-            l = self.loss(output, target, disMap,current_epoch)
+            l = self.loss(output, target, disMap, current_epoch)
             print(l, current_epoch)
             if do_backprop:
                 l.backward()

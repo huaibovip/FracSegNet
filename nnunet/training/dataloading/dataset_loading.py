@@ -224,7 +224,7 @@ class DataLoader3D(SlimDataLoaderBase):
         selected_keys = np.random.choice(self.list_of_keys, self.batch_size, True, None)
         data = np.zeros(self.data_shape, dtype=np.float32)
         seg = np.zeros(self.seg_shape, dtype=np.float32)
-        disMap = np.zeros(self.seg_shape,dtype=np.float32)
+        disMap = np.zeros(self.seg_shape, dtype=np.float32)
         case_properties = []
         for j, i in enumerate(selected_keys):
             # oversampling foreground will improve stability of model training, especially if many patches are empty
@@ -273,7 +273,7 @@ class DataLoader3D(SlimDataLoaderBase):
             # (above) documentation of the day. Nice. Even myself coming back 1 months later I have not friggin idea
             # what's going on. I keep the above documentation just for fun but attempt to make things clearer now
 
-            need_to_pad = self.need_to_pad
+            need_to_pad = self.need_to_pad.copy()
             for d in range(3):
                 # if case_all_data.shape + need_to_pad is still < patch size we need to pad more! We pad on both sides
                 # always
@@ -281,7 +281,7 @@ class DataLoader3D(SlimDataLoaderBase):
                     need_to_pad[d] = self.patch_size[d] - case_all_data.shape[d + 1]
 
             # we can now choose the bbox from -need_to_pad // 2 to shape - patch_size + need_to_pad // 2. Here we
-            # define what the upper and lower bound can be to then sample form them with np.random.randint
+            # define what the upper and lower bound can be to then sample from them with np.random.randint
             shape = case_all_data.shape[1:]
             lb_x = - need_to_pad[0] // 2
             ub_x = shape[0] + need_to_pad[0] // 2 + need_to_pad[0] % 2 - self.patch_size[0]
@@ -396,7 +396,7 @@ class DataLoader2D(SlimDataLoaderBase):
         and increase CPU usage. Therefore, I advise you to call unpack_dataset(folder) first, which will unpack all npz
         to npy. Don't forget to call delete_npy(folder) after you are done with training?
         Why all the hassle? Well the decathlon dataset is huge. Using npy for everything will consume >1 TB and that is uncool
-        given that I (Fabian) will have to store that permanently on /datasets and my local computer. With htis strategy all
+        given that I (Fabian) will have to store that permanently on /datasets and my local computer. With this strategy all
         data is stored in a compressed format (factor 10 smaller) and only unpacked when needed.
         :param data: get this with load_dataset(folder, stage=0). Plug the return value in here and you are g2g (good to go)
         :param patch_size: what patch size will this data loader return? it is common practice to first load larger
@@ -534,9 +534,9 @@ class DataLoader2D(SlimDataLoaderBase):
             assert len(case_all_data.shape) == 3
 
             # we can now choose the bbox from -need_to_pad // 2 to shape - patch_size + need_to_pad // 2. Here we
-            # define what the upper and lower bound can be to then sample form them with np.random.randint
+            # define what the upper and lower bound can be to then sample from them with np.random.randint
 
-            need_to_pad = self.need_to_pad
+            need_to_pad = self.need_to_pad.copy()
             for d in range(2):
                 # if case_all_data.shape + need_to_pad is still < patch size we need to pad more! We pad on both sides
                 # always

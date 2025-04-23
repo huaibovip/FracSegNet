@@ -24,10 +24,13 @@
             "request": "launch",
             "program": "nnunet/run/run_training.py",
             "console": "integratedTerminal",
+            // "justMyCode": false,
             "env": {
                 "nnUNet_raw_data_base": "${workspaceFolder}/dataset/nnUNet_raw",
                 "nnUNet_preprocessed": "${workspaceFolder}/dataset/nnUNet_preprocessed",
                 "RESULTS_FOLDER": "${workspaceFolder}/work_dirs/nnUNet_trained_models",
+                "CUDA_VISIBLE_DEVICES": "0",
+                "nnUNet_n_proc_DA": "1",
             },
             "args": [
                 "3d_fullres",

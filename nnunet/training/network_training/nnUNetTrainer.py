@@ -1,18 +1,3 @@
-#    Copyright 2020 Division of Medical Image Computing, German Cancer Research Center (DKFZ), Heidelberg, Germany
-#
-#    Licensed under the Apache License, Version 2.0 (the "License");
-#    you may not use this file except in compliance with the License.
-#    You may obtain a copy of the License at
-#
-#        http://www.apache.org/licenses/LICENSE-2.0
-#
-#    Unless required by applicable law or agreed to in writing, software
-#    distributed under the License is distributed on an "AS IS" BASIS,
-#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#    See the License for the specific language governing permissions and
-#    limitations under the License.
-
-
 import shutil
 from collections import OrderedDict
 from multiprocessing import Pool
@@ -105,7 +90,7 @@ class nnUNetTrainer(NetworkTrainer):
         self.basic_generator_patch_size = self.data_aug_params = self.transpose_forward = self.transpose_backward = None
 
         self.batch_dice = batch_dice
-        self.loss = DC_and_CE_loss({'batch_dice': self.batch_dice, 'smooth': 1e-5, 'do_bg': False}, {}, disMap_weight=None, epoch = None)
+        self.loss = DC_and_CE_loss({'batch_dice': self.batch_dice, 'smooth': 1e-5, 'do_bg': False}, {})
 
         self.online_eval_foreground_dc = []
         self.online_eval_tp = []
@@ -214,11 +199,13 @@ class nnUNetTrainer(NetworkTrainer):
                 self.print_to_log_file(
                     "INFO: Not unpacking data! Training may be slow due to that. Pray you are not using 2d or you "
                     "will wait all winter for your model to finish!")
-            print('self.data_aug_params:', self.data_aug_params)
+            print('self.data_aug_params:',self.data_aug_params)
             self.tr_gen, self.val_gen = get_default_augmentation(self.dl_tr, self.dl_val,
                                                                  self.data_aug_params[
                                                                      'patch_size_for_spatialtransform'],
                                                                  self.data_aug_params)
+            # print('tr_gen.shape:',self.tr_gen.shape)
+            # print('val_gen.shape:',self.tr_gen.shape)
             self.print_to_log_file("TRAINING KEYS:\n %s" % (str(self.dataset_tr.keys())),
                                    also_print_to_console=False)
             self.print_to_log_file("VALIDATION KEYS:\n %s" % (str(self.dataset_val.keys())),

@@ -96,6 +96,15 @@ def get_mask_image(sitk_src, array_mask, replacevalue=0):
     return outmask_sitk
 
 
+def check_data(root):
+    files = listdir(root)
+    for file in files:
+        img = sitk.ReadImage(join(root, file))
+        arr = sitk.GetArrayFromImage(img)
+        num_labels = len(np.unique(arr))
+        assert num_labels <= 3, file
+
+
 if __name__ == '__main__':
     """
     export nnUNet_raw_data_base="$HOME/projects/vscode/FracSegNet/dataset/nnUNet_raw"
@@ -190,7 +199,7 @@ if __name__ == '__main__':
         "0": "background",
         "1": "main fracture segment",
         "2": "segment 2",
-        "3": "segment 3"
+        # "3": "segment 3"
     }
     json_dict['numTraining'] = len(train_patient_names)
     json_dict['numTest'] = 0
@@ -202,3 +211,5 @@ if __name__ == '__main__':
     json_dict['test'] = []
 
     save_json(json_dict, join(target_base, "dataset.json"))
+
+    # check_data(target_labelsTr)

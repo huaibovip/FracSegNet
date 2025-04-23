@@ -28,26 +28,21 @@ class MultipleOutputLoss2(nn.Module):
         self.weight_factors = weight_factors
         self.loss = loss
 
-    def forward(self,
-                x,
-                y,
-                disMap=None,
-                epoch=None,
-                do_disMap_ds=True,
-                Tauo_ds=0,
-                ds_epoch=1000):
+    def forward(self, x, y, disMap=None, epoch=None, do_disMap_ds=True):
 
         if do_disMap_ds == True:
             assert isinstance(x, (tuple, list)), "x must be either tuple or list"
             assert isinstance(y, (tuple, list)), "y must be either tuple or list"
-            assert isinstance(disMap, (tuple, list)), "y must be either tuple or list"
+            assert isinstance(disMap, (tuple, list)), "y must be either tuple or list"        
             if self.weight_factors is None:
                 weights = [1] * len(x)
             else:
                 weights = self.weight_factors
 
-            l = weights[0] * self.loss(x[0], y[0],disMap[0],epoch)
+            l = weights[0] * self.loss(x[0], y[0], disMap[0], epoch)
 
+            Tauo_ds=0
+            ds_epoch=1000
             # smooth transition with deep supervision
             for i in range(1, len(x)):
                 if weights[i] != 0:
@@ -68,7 +63,6 @@ class MultipleOutputLoss2(nn.Module):
                             disMap[i][:, 0] = weighted_ds_disMap
 
                     elif epoch > Tauo_ds + ds_epoch:
-                        # print(do_disMap_ds)
                         if disMap[i][:, 0] != None:
                             temp_disMap_value = disMap[i][:,0] / torch.mean(disMap[i][:, 0])
                             ones_matrix = torch.ones_like(temp_disMap_value)
