@@ -1,14 +1,113 @@
+import hashlib
 import os
+import zipfile
 from os.path import join
+from warnings import warn
 
 import numpy as np
+import requests
 import SimpleITK as sitk
+import tqdm
 from batchgenerators.utilities.file_and_folder_operations import (
     join, listdir, maybe_mkdir_p, save_json)
 from natsort import natsorted
+from tqdm import tqdm
 
 cur_root = os.path.abspath(join(os.path.dirname(__file__), '..', '..'))
 data_root = join(cur_root, 'dataset', 'nnUNet_raw')
+
+URLS = {
+    "CT": [
+        "https://zenodo.org/records/10927452/files/PENGWIN_CT_train_labels.zip",  # labels
+        "https://zenodo.org/records/10927452/files/PENGWIN_CT_train_images_part1.zip",  # inputs part 1
+        "https://zenodo.org/records/10927452/files/PENGWIN_CT_train_images_part2.zip",  # inputs part 2
+    ],
+    "X-Ray": ["https://zenodo.org/records/10913196/files/train.zip"]
+}
+
+CHECKSUMS = {
+    "CT": [
+        "c4d3857e02d3ee5d0df6c8c918dd3cf5a7c9419135f1ec089b78215f37c6665c",  # labels
+        "e2e9f99798960607ffced1fbdeee75a626c41bf859eaf4125029a38fac6b7609",  # inputs part 1
+        "19f3cdc5edd1daf9324c70f8ba683eed054f6ed8f2b1cc59dbd80724f8f0bbb2",  # inputs part 2
+    ],
+    "X-Ray":
+    ["48d107979eb929a3c61da4e75566306a066408954cf132907bda570f2a7de725"]
+}
+
+TARGET_DIRS = {
+    "CT": [
+        "PENGWIN_CT_train_labels", "PENGWIN_CT_train_images",
+        "PENGWIN_CT_train_images"
+    ],
+    "X-Ray": ["X-Ray"]
+}
+
+MODALITIES = ["CT", "X-Ray"]
+
+
+def unzip(zip_path, dst, remove=True):
+    with zipfile.ZipFile(zip_path, "r") as f:
+        f.extractall(dst)
+    if remove:
+        os.remove(zip_path)
+
+
+def _check_checksum(path, checksum):
+
+    def get_checksum(filename):
+        with open(filename, "rb") as f:
+            file_ = f.read()
+            checksum = hashlib.sha256(file_).hexdigest()
+        return checksum
+
+    if checksum is not None:
+        this_checksum = get_checksum(path)
+        if this_checksum != checksum:
+            raise RuntimeError(
+                "The checksum of the download does not match the expected checksum."
+                f"Expected: {checksum}, got: {this_checksum}")
+        print("Download successful and checksums agree.")
+    else:
+        warn(
+            "The file was downloaded, but no checksum was provided, so the file may be corrupted."
+        )
+
+
+def download(path, url, checksum=None, verify=True):
+    resp = requests.get(url, stream=True, allow_redirects=True, verify=verify)
+    total = int(resp.headers.get('content-length', 0))
+    with open(path, 'wb') as file, tqdm(
+            desc='Downloading',
+            total=total,
+            unit='iB',
+            unit_scale=True,
+            unit_divisor=1024,
+    ) as bar:
+        for data in resp.iter_content(chunk_size=1024):
+            size = file.write(data)
+            bar.update(size)
+    _check_checksum(path, checksum)
+
+
+def download_pengwin_data(path: str, modality: list = "CT") -> str:
+    """Download the PENGWIN dataset.
+
+    Args:
+        path: Filepath to a folder where the data is downloaded for further processing.
+        modality: The choice of modality for inputs.
+        download: Whether to download the data if it is not present.
+
+    Returns:
+        Filepath where the data is downlaoded.
+    """
+    os.makedirs(path, exist_ok=True)
+    for url, checksum, dst_dir in zip(URLS[modality], CHECKSUMS[modality],
+                                      TARGET_DIRS[modality]):
+        zip_path = join(path, os.path.split(url)[-1])
+        download(path=zip_path, url=url, checksum=checksum)
+        unzip(zip_path=zip_path, dst=join(path, dst_dir))
+
 
 # 数据集的标签内容为:
 # 0 = 背景,
@@ -111,9 +210,10 @@ if __name__ == '__main__':
     export nnUNet_preprocessed="$HOME/projects/vscode/FracSegNet/dataset/nnUNet_preprocessed"
     export RESULTS_FOLDER="$HOME/projects/vscode/FracSegNet/dataset/nnUNet_trained_models" 
     """
-    downloaded_data_dir = join(data_root, 'PENGWIN_CT')
+    downloaded_data_dir = join(data_root, 'PENGWIN_CT1')
     img_root = join(downloaded_data_dir, 'PENGWIN_CT_train_images')
     seg_root = join(downloaded_data_dir, 'PENGWIN_CT_train_labels')
+    download_pengwin_data(downloaded_data_dir)
 
     task_name = "Task600_CT_PelvicFrac150"
     target_base = join(data_root, 'nnUNet_raw_data', task_name)
