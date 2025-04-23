@@ -20,15 +20,17 @@ FracSegNet is developed and tested on Linux (Ubuntu 20.04) with a minimum GPU re
    ```bash
    pip install torch==1.12.0+cu113 torchvision==0.13.0+cu113 torchaudio==0.12.0
    ```
+
 2. **Install nn-UNet**  
    Install nn-UNet, which serves as a standardized baseline for 3D UNet and facilitates the setup of FracSegNet:
    ```bash
-   pip install nnunet==1.7.0
-   ```
-3. **Overwrite nn-UNet with FracSegNet Files**  
-   Replace the nn-UNet installation with FracSegNet files:
-   ```bash
-   cp -r /path_to_FracSegNet/Training/FracSegNet/* /path_to_python_envs/env_name/python3.7/site-packages/nnunet/ 
+   git clone https://github.com/huaibovip/FracSegNet.git
+
+   cd FracSegNet/3rdparty/batchgenerators
+   pip install -e .
+
+   cd ../..
+   pip install -e .
    ```
 
 ## Usage
