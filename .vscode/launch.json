@@ -8,6 +8,7 @@
             "program": "nnunet/experiment_planning/nnUNet_plan_and_preprocess.py",
             "console": "integratedTerminal",
             "env": {
+                "PYTHONPATH": "${workspaceFolder}",
                 "nnUNet_raw_data_base": "${workspaceFolder}/dataset/nnUNet_raw",
                 "nnUNet_preprocessed": "${workspaceFolder}/dataset/nnUNet_preprocessed",
                 "RESULTS_FOLDER": "${workspaceFolder}/work_dirs/nnUNet_trained_models",
@@ -24,19 +25,20 @@
             "request": "launch",
             "program": "nnunet/run/run_training.py",
             "console": "integratedTerminal",
-            // "justMyCode": false,
+            "justMyCode": false,
             "env": {
+                "PYTHONPATH": "${workspaceFolder}",
                 "nnUNet_raw_data_base": "${workspaceFolder}/dataset/nnUNet_raw",
                 "nnUNet_preprocessed": "${workspaceFolder}/dataset/nnUNet_preprocessed",
                 "RESULTS_FOLDER": "${workspaceFolder}/work_dirs/nnUNet_trained_models",
                 "CUDA_VISIBLE_DEVICES": "0",
-                "nnUNet_n_proc_DA": "1",
+                "nnUNet_n_proc_DA": "4",
             },
             "args": [
                 "3d_fullres",
                 "nnUNetTrainerV2",
                 "Task600_CT_PelvicFrac150",
-                "all"
+                "5"
             ]
         },
         {
@@ -47,6 +49,7 @@
             "console": "integratedTerminal",
             "justMyCode": false,
             "env": {
+                "PYTHONPATH": "${workspaceFolder}",
                 "nnUNet_raw_data_base": "${workspaceFolder}/dataset/nnUNet_raw",
                 "nnUNet_preprocessed": "${workspaceFolder}/dataset/nnUNet_preprocessed",
                 "RESULTS_FOLDER": "${workspaceFolder}/work_dirs/nnUNet_trained_models",
@@ -67,6 +70,7 @@
             "program": "nnunet/inference/extract_ct_regions.py",
             "console": "integratedTerminal",
             "env": {
+                "PYTHONPATH": "${workspaceFolder}",
                 "nnUNet_raw_data_base": "${workspaceFolder}/dataset/nnUNet_raw",
                 "nnUNet_preprocessed": "${workspaceFolder}/dataset/nnUNet_preprocessed",
                 "RESULTS_FOLDER": "${workspaceFolder}/work_dirs/nnUNet_trained_models",
@@ -83,6 +87,7 @@
             "program": "nnunet/inference/predict_simple.py",
             "console": "integratedTerminal",
             "env": {
+                "PYTHONPATH": "${workspaceFolder}",
                 "nnUNet_raw_data_base": "${workspaceFolder}/dataset/nnUNet_raw",
                 "nnUNet_preprocessed": "${workspaceFolder}/dataset/nnUNet_preprocessed",
                 "RESULTS_FOLDER": "${workspaceFolder}/work_dirs/nnUNet_trained_models",
