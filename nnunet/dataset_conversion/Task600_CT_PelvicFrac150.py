@@ -210,10 +210,10 @@ if __name__ == '__main__':
     export nnUNet_preprocessed="$HOME/projects/vscode/FracSegNet/dataset/nnUNet_preprocessed"
     export RESULTS_FOLDER="$HOME/projects/vscode/FracSegNet/dataset/nnUNet_trained_models" 
     """
-    downloaded_data_dir = join(data_root, 'PENGWIN_CT1')
+    downloaded_data_dir = join(data_root, 'PENGWIN_CT')
     img_root = join(downloaded_data_dir, 'PENGWIN_CT_train_images')
     seg_root = join(downloaded_data_dir, 'PENGWIN_CT_train_labels')
-    download_pengwin_data(downloaded_data_dir)
+    # download_pengwin_data(downloaded_data_dir)
 
     task_name = "Task600_CT_PelvicFrac150"
     target_base = join(data_root, 'nnUNet_raw_data', task_name)
