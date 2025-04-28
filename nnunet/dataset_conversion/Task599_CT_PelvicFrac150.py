@@ -1,6 +1,7 @@
 import os
 from os.path import join
 
+import nibabel as nib
 import numpy as np
 import SimpleITK as sitk
 from batchgenerators.utilities.file_and_folder_operations import (
@@ -94,6 +95,14 @@ def get_mask_image(sitk_src, array_mask, replacevalue=0):
     return outmask_sitk
 
 
+def reorient_to_RAS(img_fname: str, output_fname: str = None):
+    img = nib.load(img_fname)
+    canonical_img = nib.as_closest_canonical(img)
+    if output_fname is None:
+        output_fname = img_fname
+    nib.save(canonical_img, output_fname)
+
+
 if __name__ == '__main__':
     """
     export nnUNet_raw_data_base="$HOME/projects/vscode/FracSegNet/dataset/nnUNet_raw"
@@ -124,6 +133,11 @@ if __name__ == '__main__':
             seg_path,
             join(target_labelsTr, file[:3] + ".nii.gz"),
         )
+
+    for fname in listdir(target_imagesTr):
+        reorient_to_RAS(join(target_imagesTr, fname))
+    for fname in listdir(target_labelsTr):
+        reorient_to_RAS(join(target_labelsTr, fname))
 
     train_patient_names = natsorted(listdir(target_labelsTr))
 
