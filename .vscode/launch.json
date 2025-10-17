@@ -2,6 +2,19 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "preprocess_dataset",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "nnunet/dataset_conversion2/Task599_CTPelvicFrac150.py",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}",
+                "nnUNet_raw_data_base": "${workspaceFolder}/dataset/nnUNet_raw",
+                "nnUNet_preprocessed": "${workspaceFolder}/dataset/nnUNet_preprocessed",
+                "RESULTS_FOLDER": "${workspaceFolder}/work_dirs/nnUNet_trained_models",
+            }
+        },
+        {
             "name": "nnUNet_plan_and_preprocess",
             "type": "debugpy",
             "request": "launch",
@@ -14,13 +27,18 @@
                 "RESULTS_FOLDER": "${workspaceFolder}/work_dirs/nnUNet_trained_models",
             },
             "args": [
-                "-t", "600",
+                "-t", "599",
                 "-pl2d", "None",
                 "--verify_dataset_integrity",
             ]
+            // "args": [
+            //     "-t", "600",
+            //     "-pl2d", "None",
+            //     "--verify_dataset_integrity",
+            // ]
         },
         {
-            "name": "nnUNet_train",
+            "name": "nnUNet_pretrain",
             "type": "debugpy",
             "request": "launch",
             "program": "nnunet/run/run_training.py",
@@ -37,12 +55,12 @@
             "args": [
                 "3d_fullres",
                 "nnUNetTrainerV2",
-                "Task600_CT_PelvicFrac150",
-                "5"
+                "Task600_CTPelvicFrac150",
+                "0"
             ]
         },
         {
-            "name": "nnUNet_predict(stage1)",
+            "name": "nnUNet_predict",
             "type": "debugpy",
             "request": "launch",
             "program": "nnunet/inference/predict_simple.py",
@@ -52,15 +70,60 @@
                 "PYTHONPATH": "${workspaceFolder}",
                 "nnUNet_raw_data_base": "${workspaceFolder}/dataset/nnUNet_raw",
                 "nnUNet_preprocessed": "${workspaceFolder}/dataset/nnUNet_preprocessed",
-                "RESULTS_FOLDER": "${workspaceFolder}/work_dirs/nnUNet_trained_models",
+                // "RESULTS_FOLDER": "${workspaceFolder}/work_dirs/nnUNet_trained_models",
+                "RESULTS_FOLDER": "${workspaceFolder}/checkpoints",
+                "CUDA_VISIBLE_DEVICES": "0",
+                "nnUNet_n_proc_DA": "4",
             },
             "args": [
-                "-m", "3d_cascade_fullres",
-                "--disable_tta",
-                "-t", "600",
-                "-f", "all",
                 "-i", "dataset/test_data",
-                "-o", "Result/001",
+                "-o", "dataset/results/001",
+                "-t", "599",
+                "-m", "3d_cascade_fullres",
+                "-f", "0",
+                "--num_threads_preprocessing", "0",
+            ]
+        },
+        {
+            "name": "nnUNet_determine_postprocessing",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "nnunet/postprocessing/consolidate_postprocessing_simple.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}",
+                "nnUNet_raw_data_base": "${workspaceFolder}/dataset/nnUNet_raw",
+                "nnUNet_preprocessed": "${workspaceFolder}/dataset/nnUNet_preprocessed",
+                "RESULTS_FOLDER": "${workspaceFolder}/checkpoints",
+                // "RESULTS_FOLDER": "${workspaceFolder}/work_dirs/nnUNet_trained_models",
+            },
+            "args": [
+                "-m", "3d_fullres",
+                "-t", "Task600_CTPelvicFrac150",
+            ]
+        },         
+        {
+            "name": "nnUNet_predict(stage1)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "nnunet/inference/predict_simple.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder};${workspaceFolder}/3rdparty;${env:PYTHONPATH}",
+                "nnUNet_raw_data_base": "${workspaceFolder}/dataset/nnUNet_raw",
+                "nnUNet_preprocessed": "${workspaceFolder}/dataset/nnUNet_preprocessed",
+                "RESULTS_FOLDER": "${workspaceFolder}/checkpoints",
+                // "RESULTS_FOLDER": "${workspaceFolder}/work_dirs/nnUNet_trained_models",
+            },
+            "args": [
+                "-i", "dataset/test_data",
+                "-o", "dataset/results/001",
+                "-t", "600",
+                "-m", "3d_cascade_fullres",
+                "-f", "all",
+                "--disable_tta",
             ]
         },
         {
@@ -73,11 +136,12 @@
                 "PYTHONPATH": "${workspaceFolder}",
                 "nnUNet_raw_data_base": "${workspaceFolder}/dataset/nnUNet_raw",
                 "nnUNet_preprocessed": "${workspaceFolder}/dataset/nnUNet_preprocessed",
-                "RESULTS_FOLDER": "${workspaceFolder}/work_dirs/nnUNet_trained_models",
+                "RESULTS_FOLDER": "${workspaceFolder}/checkpoints",
+                // "RESULTS_FOLDER": "${workspaceFolder}/work_dirs/nnUNet_trained_models",
             },
             "args": [
-                "-i", "dataset/test_data",
-                "-o", "Result/001",
+                "-i", "dataset/test_data/001_0000.nii.gz",
+                "-m", "dataset/results/001/001.nii.gz",
             ]
         },
         {
@@ -90,14 +154,15 @@
                 "PYTHONPATH": "${workspaceFolder}",
                 "nnUNet_raw_data_base": "${workspaceFolder}/dataset/nnUNet_raw",
                 "nnUNet_preprocessed": "${workspaceFolder}/dataset/nnUNet_preprocessed",
-                "RESULTS_FOLDER": "${workspaceFolder}/work_dirs/nnUNet_trained_models",
+                "RESULTS_FOLDER": "${workspaceFolder}/checkpoints",
+                // "RESULTS_FOLDER": "${workspaceFolder}/work_dirs/nnUNet_trained_models",
             },
             "args": [
                 "-m", "3d_fullres",
                 "-t", "600",
                 "-f", "all",
-                "-i", "dataset/test_data",
-                "-o", "Result/001",
+                "-i", "dataset/test_data/fraction",
+                "-o", "dataset/results/001",
             ]
         },
     ]

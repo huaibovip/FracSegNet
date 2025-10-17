@@ -118,10 +118,10 @@ data
 *.pkl
 *.pkl.json
 *.log.json
-work_dirs
-work_dirs/
+
 develop/
-checkpoints/
-dataset/
-FracSegNet/
-result/
+results/
+
+dataset
+work_dirs
+checkpoints

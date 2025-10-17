@@ -118,12 +118,7 @@ def download_pengwin_data(path: str, modality: list = "CT") -> str:
 sa_labels = set([i for i in range(1, 11)])
 li_labels = set([i for i in range(11, 21)])
 ri_labels = set([i for i in range(21, 31)])
-NUM_LABELS = 2
-
-
-def convert(in_file, out_file):
-    img = sitk.ReadImage(in_file)
-    sitk.WriteImage(img, out_file)
+NUM_MAIN_LABELS = 2
 
 
 def convert_with_mask(in_img_file, in_label_file, out_file, roi_labels):
@@ -142,41 +137,15 @@ def convert_separate_fracture(in_file, out_file, sorted_roi_labels: list):
     print(f"{os.path.basename(out_file)[:-7]}\t{sorted_roi_labels}")
     img = sitk.ReadImage(in_file)
     arr = sitk.GetArrayFromImage(img)
-    num_labels = NUM_LABELS if len(sorted_roi_labels) > NUM_LABELS else len(
-        sorted_roi_labels)
+    num_labels = len(sorted_roi_labels)
 
     new_arr = np.zeros_like(arr)
     for i in range(num_labels):
-        new_arr[arr == sorted_roi_labels[i]] = i + 1
-    new_img = sitk.GetImageFromArray(new_arr)
-
-    new_img.SetOrigin(img.GetOrigin())
-    new_img.SetSpacing(img.GetSpacing())
-    new_img.SetDirection(img.GetDirection())
-    sitk.WriteImage(new_img, out_file)
-
-
-def convert_with_combine_label(in_file, out_file):
-    img = sitk.ReadImage(in_file)
-    arr = sitk.GetArrayFromImage(img)
-    labels = set(np.unique(arr).tolist())
-    sal = list(sa_labels & labels)
-    lil = list(li_labels & labels)
-    ril = list(ri_labels & labels)
-    print(f"{os.path.basename(out_file)[:-7]} "
-          f"{str(sal):<20} {str(lil):<20} {str(ril):<20}")
-
-    new_arr = np.zeros_like(arr)
-    for i in labels:
-        if i in sal:
-            label = 1
-        elif i in lil:
-            label = 2
-        elif i in ril:
-            label = 3
+        if i < NUM_MAIN_LABELS:
+            new_arr[arr == sorted_roi_labels[i]] = i + 1
         else:
-            label = 0
-        new_arr[arr == i] = label
+            new_arr[arr == sorted_roi_labels[i]] = NUM_MAIN_LABELS
+
     new_img = sitk.GetImageFromArray(new_arr)
 
     new_img.SetOrigin(img.GetOrigin())
@@ -224,7 +193,7 @@ if __name__ == '__main__':
     seg_root = join(downloaded_data_dir, 'PENGWIN_CT_train_labels')
     # download_pengwin_data(downloaded_data_dir)
 
-    task_name = "Task600_CT_PelvicFrac150"
+    task_name = "Task600_CTPelvicFrac150"
     target_base = join(data_root, 'nnUNet_raw_data', task_name)
     target_imagesTr = join(target_base, 'imagesTr')
     target_labelsTr = join(target_base, 'labelsTr')
@@ -294,10 +263,10 @@ if __name__ == '__main__':
         else:
             raise ValueError()
 
-    for fname in listdir(target_imagesTr):
-        reorient_to_RAS(join(target_imagesTr, fname))
-    for fname in listdir(target_labelsTr):
-        reorient_to_RAS(join(target_labelsTr, fname))
+    # for fname in listdir(target_imagesTr):
+    #     reorient_to_RAS(join(target_imagesTr, fname))
+    # for fname in listdir(target_labelsTr):
+    #     reorient_to_RAS(join(target_labelsTr, fname))
 
     train_patient_names = natsorted(listdir(target_labelsTr))
 

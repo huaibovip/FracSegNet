@@ -23,36 +23,8 @@ ri_labels = set([i for i in range(21, 31)])
 
 def convert(in_file, out_file):
     img = sitk.ReadImage(in_file)
+    img = sitk.Cast(img, sitk.sitkFloat32)
     sitk.WriteImage(img, out_file)
-
-
-def convert_with_mask(in_img_file, in_label_file, out_file, roi_labels):
-    scale_img = sitk.ReadImage(in_img_file)
-    label_img = sitk.ReadImage(in_label_file)
-    mask_arr = sitk.GetArrayFromImage(label_img).copy()
-    for i in np.unique(mask_arr):
-        if i not in roi_labels:
-            mask_arr[mask_arr == i] = 0
-
-    frac_grayscale = get_mask_image(scale_img, mask_arr, replacevalue=0)
-    sitk.WriteImage(frac_grayscale, out_file)
-
-
-def convert_separate_fracture(in_file, out_file, sorted_roi_labels: list):
-    print(f"{os.path.basename(out_file)[:-7]}\t{sorted_roi_labels}")
-    img = sitk.ReadImage(in_file)
-    arr = sitk.GetArrayFromImage(img)
-    num_labels = 3 if len(sorted_roi_labels) > 3 else len(sorted_roi_labels)
-
-    new_arr = np.zeros_like(arr)
-    for i in range(num_labels):
-        new_arr[arr == sorted_roi_labels[i]] = i + 1
-    new_img = sitk.GetImageFromArray(new_arr)
-
-    new_img.SetOrigin(img.GetOrigin())
-    new_img.SetSpacing(img.GetSpacing())
-    new_img.SetDirection(img.GetDirection())
-    sitk.WriteImage(new_img, out_file)
 
 
 def convert_with_combine_label(in_file, out_file):
@@ -65,7 +37,7 @@ def convert_with_combine_label(in_file, out_file):
     print(f"{os.path.basename(out_file)[:-7]} "
           f"{str(sal):<20} {str(lil):<20} {str(ril):<20}")
 
-    new_arr = np.zeros_like(arr)
+    new_arr = np.zeros_like(arr, dtype=np.uint8)
     for i in labels:
         if i in sal:
             label = 1
@@ -76,23 +48,12 @@ def convert_with_combine_label(in_file, out_file):
         else:
             label = 0
         new_arr[arr == i] = label
-    new_img = sitk.GetImageFromArray(new_arr)
+    new_img = sitk.GetImageFromArray(new_arr.astype(np.uint8))
 
     new_img.SetOrigin(img.GetOrigin())
     new_img.SetSpacing(img.GetSpacing())
     new_img.SetDirection(img.GetDirection())
     sitk.WriteImage(new_img, out_file)
-
-
-def get_mask_image(sitk_src, array_mask, replacevalue=0):
-    array_src = sitk.GetArrayFromImage(sitk_src)
-    array_out = array_src.copy()
-    array_out[array_mask == 0] = replacevalue
-    outmask_sitk = sitk.GetImageFromArray(array_out)
-    outmask_sitk.SetDirection(sitk_src.GetDirection())
-    outmask_sitk.SetSpacing(sitk_src.GetSpacing())
-    outmask_sitk.SetOrigin(sitk_src.GetOrigin())
-    return outmask_sitk
 
 
 def reorient_to_RAS(img_fname: str, output_fname: str = None):
@@ -101,6 +62,27 @@ def reorient_to_RAS(img_fname: str, output_fname: str = None):
     if output_fname is None:
         output_fname = img_fname
     nib.save(canonical_img, output_fname)
+
+
+def check_image(root):
+    files = listdir(root)
+    dirs = set()
+    for file in files:
+        img = sitk.ReadImage(join(root, file))
+        dirs.add(img.GetDirection())
+    print(dirs)
+
+
+def check_label(root):
+    files = listdir(root)
+    dirs = set()
+    for file in files:
+        img = sitk.ReadImage(join(root, file))
+        dirs.add(img.GetDirection())
+        arr = sitk.GetArrayFromImage(img)
+        num_labels = len(np.unique(arr))
+        assert num_labels <= 4, f'{file}, {num_labels}'
+    print(dirs)
 
 
 if __name__ == '__main__':
@@ -113,7 +95,7 @@ if __name__ == '__main__':
     img_root = join(downloaded_data_dir, 'PENGWIN_CT_train_images')
     seg_root = join(downloaded_data_dir, 'PENGWIN_CT_train_labels')
 
-    task_name = "Task599_CT_PelvicFrac150"
+    task_name = "Task599_CTPelvicFrac150"
     target_base = join(data_root, 'nnUNet_raw_data', task_name)
     target_imagesTr = join(target_base, 'imagesTr')
     target_labelsTr = join(target_base, 'labelsTr')
@@ -165,3 +147,6 @@ if __name__ == '__main__':
     json_dict['test'] = []
 
     save_json(json_dict, join(target_base, "dataset.json"))
+
+    # check_image(target_imagesTr)
+    # check_label(target_labelsTr)
